@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, List, Literal, TypedDict
 import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
+import dash_core_components as dcc
 from dash import ClientsideFunction, Input, Output, State, clientside_callback, get_asset_url, get_relative_path, html
 
 try:
@@ -221,10 +222,11 @@ class Dashboard(VizroBaseModel):
 
         page_header = html.Div(page_header_divs, id="page-header", hidden=_all_hidden(page_header_divs))
         page_main = html.Div([collapsable_left_side, collapsable_icon, right_side], id="page-main")
-        return html.Div([page_header, page_main], id="page-container")
+        return html.Div([dcc.Location(id="url"),html.Div(id='print'),page_header, page_main], id="page-container")
 
-    def _make_page_layout(self, page: Page):
+    def _make_page_layout(self, page: Page, **kwargs):
         page_divs = self._get_page_divs(page=page)
+        print(kwargs)
         return self._arrange_page_divs(page_divs=page_divs)
 
     @staticmethod
