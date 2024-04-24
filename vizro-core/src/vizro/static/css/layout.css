@@ -134,7 +134,7 @@
   display: none;
 }
 
-#page-main {
+.page-main {
   display: flex;
   flex: 1 1 0;
   flex-direction: row;

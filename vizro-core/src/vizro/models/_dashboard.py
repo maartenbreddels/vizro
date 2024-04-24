@@ -30,6 +30,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Just copied over here for demonstration purposes - this shouldn't live here
+def clean_path(path: str, allowed_characters: str) -> str:
+    path = path.strip().lower().replace(" ", "-")
+    path = "".join(character for character in path if character.isalnum() or character in allowed_characters)
+    return path
 
 def _all_hidden(components: List[Component]):
     """Returns True if all `components` are either None and/or have hidden=True and/or className contains `d-none`."""
@@ -225,7 +230,9 @@ class Dashboard(VizroBaseModel):
         right_side = html.Div([right_header, right_main], id="right-side")
 
         page_header = html.Div(page_header_divs, id="page-header", hidden=_all_hidden(page_header_divs))
-        page_main = html.Div([collapsable_left_side, collapsable_icon, right_side], id="page-main")
+
+        # Not sure if the ID should be provided to `page-main` or another container. This is just for the quick POC.
+        page_main = html.Div([collapsable_left_side, collapsable_icon, right_side], id=clean_path(page_divs["page-title"].children, "-_/"), className="page-main")
         return html.Div([page_header, page_main], id="page-container")
 
     def _make_page_layout(self, page: Page):

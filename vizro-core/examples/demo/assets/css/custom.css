@@ -9,3 +9,7 @@ img[src*="#my-image"] {
   height: 40px;
   margin-left: -8px;
 }
+
+#variable-analysis #right-header {
+  display: none;
+}
