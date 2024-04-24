@@ -170,7 +170,7 @@ class Dashboard(VizroBaseModel):
 
         # Shared across pages but slightly differ in content. These could possibly be done by a clientside
         # callback instead.
-        page_title = html.H2(page.title, id="page-title")
+        page_title = html.H2(page.title, id="page-title", hidden=not page.title)
         navigation: _NavBuildType = self.navigation.build(active_page_id=page.id)
         nav_bar = navigation["nav-bar"]
         nav_panel = navigation["nav-panel"]
@@ -220,7 +220,7 @@ class Dashboard(VizroBaseModel):
 
         collapsable_left_side = dbc.Collapse(left_side, id="collapsable-left-side", is_open=True, dimension="width")
 
-        right_header = html.Div(right_header_divs, id="right-header")
+        right_header = html.Div(right_header_divs, id="right-header", hidden=_all_hidden(right_header_divs))
         right_main = page_divs["page-components"]
         right_side = html.Div([right_header, right_main], id="right-side")
 

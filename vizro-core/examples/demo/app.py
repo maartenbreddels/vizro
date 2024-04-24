@@ -319,7 +319,8 @@ def create_relation_analysis():
 def create_continent_summary():
     """Function returns a page with markdown including images."""
     page_summary = vm.Page(
-        title="Continent Summary",
+        title="",
+        id="Continent Summary",
         description="Summarizing the main findings for each continent",
         layout=vm.Layout(grid=[[i] for i in range(5)], row_min_height="190px", row_gap="25px"),
         components=[
