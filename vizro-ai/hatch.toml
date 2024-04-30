@@ -16,7 +16,13 @@ dependencies = [
   "toml",
   "nbformat>=4.2.0",
   "pyhamcrest",
-  "jupyter"
+  "jupyter",
+  "guardrails-ai",
+  "feedparser",
+  "unstructured",
+  "marvin",
+  "instructor",
+  "anthropic"
 ]
 
 [envs.default.env-vars]
