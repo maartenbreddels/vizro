@@ -22,7 +22,8 @@ dependencies = [
   "unstructured",
   "marvin",
   "instructor",
-  "anthropic"
+  "anthropic",
+  "langchain-anthropic"
 ]
 
 [envs.default.env-vars]
