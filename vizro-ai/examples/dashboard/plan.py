@@ -1,7 +1,5 @@
 """Module containing the planner functionality."""
 from typing import Literal, List, Union, Optional
-
-import pandas as pd
 from pydantic.v1 import BaseModel as BaseModelV1
 from pydantic.v1 import Field, validator, create_model
 from .model import get_model
@@ -10,9 +8,7 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 import vizro.models as vm
 from vizro.tables import dash_ag_grid
-from functools import partial
-from langchain_core.exceptions import OutputParserException
-import uuid
+from vizro.models.types import SelectorType
 
 component_type = Literal["AgGrid", "Card", "Graph"]
 control_type = Literal["Filter"]
@@ -37,39 +33,26 @@ class Component(BaseModelV1):
 class Components(BaseModelV1):
     components: List[Component]
 
-
-def _validate_targets(v, available_components):
-    if v not in available_components:
-        raise ValueError(f"targets must be one of {available_components}")
-    return v
-
-
-def _validate_column(v, df):
-    if v not in df.columns:
-        raise ValueError(f"column must be one of {list(df.columns)}")
-    return v
-
-
-def _validator_factory_targets(available_components: List[str]):
-    validate_targets = partial(_validate_targets, available_components=available_components)
-    return validator("targets", pre=True, each_item=True, allow_reuse=True)(validate_targets)
-
-
-def _validator_factory_column(df: pd.DataFrame):
-    validate_column = partial(_validate_column, df=df)
-    return validator("targets", allow_reuse=True)(validate_column)
-
-
 def create_filter_proxy(df, available_components):
-    return create_model(
-        str(uuid.uuid4()),
-        column=(str, ...),
-        targets=(List[str], []),
-        __validators__={"validator1": _validator_factory_targets(available_components=available_components),
-                        "validator2": _validator_factory_column(df=df)},
-        __base__=vm.Filter,
-    )
+    def validate_targets(v):
+        if v not in available_components:
+            raise ValueError(f"targets must be one of {available_components}")
+        return v
 
+    def validate_column(v):
+        if v not in df.columns:
+            raise ValueError(f"column must be one of {list(df.columns)}")
+        return v
+    #TODO: properly check this - e.g. what is the best way to ideally dynamically include the available components
+    # even in the schema
+    return create_model(
+    'FilterProxy',
+    column=(str, Field(...,description="The target column of the filter.")),
+    targets=(List[str], Field([],description="The targets of the filter. Listen carefully to the instructions here.")),
+    __validators__={"validator1": validator("targets", pre=True,each_item=True,allow_reuse=True)(validate_targets),
+                    "validator2": validator("column",allow_reuse=True)(validate_column)},
+    __base__=vm.Filter,
+)
 
 class Control(BaseModelV1):
     control_name: control_type
@@ -81,11 +64,8 @@ class Control(BaseModelV1):
         filter_prompt = (
             f"Create a filter from the following instructions: {self.control_description}. Do not make up "
             f"things that are optional and do not configure actions. If no options are specified, leave them out.")
-        proxy = get_model(filter_prompt, model, result_model=create_filter_proxy(df, available_components),max_retry=5)
-        if isinstance(proxy, OutputParserException):
-            print(proxy)
-            return None
-        return vm.Filter.parse_obj(proxy.dict(exclude={'selector': {'id': True}, 'id': True, 'type': True}))
+        proxy = get_model(filter_prompt, model, result_model=create_filter_proxy(df,available_components))
+        return vm.Filter.parse_obj(proxy.dict(exclude={'selector': {'id':True}, 'id': True, 'type':True}))
 
 
 class Controls(BaseModelV1):
@@ -141,3 +121,18 @@ if __name__ == "__main__":
     available_components = [comp.component_id for comp in plan.pages[0].components.components]
     for i in plan.pages[0].controls.controls:
         print(repr(i))
+
+    page = vm.Page(
+        title="My first dashboard",
+        components=[
+            comp.create(fig_builder=fig_builder, df=gapminder) for comp in plan.pages[0].components.components
+        ],
+        controls=[
+            contr.create(df=gapminder, available_components=available_components) for contr in
+            plan.pages[0].controls.controls
+        ],
+    )
+
+    dashboard = vm.Dashboard(pages=[page])
+
+    Vizro().build(dashboard).run()
