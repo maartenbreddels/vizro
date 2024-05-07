@@ -26,6 +26,7 @@ dependencies = [
   "langchain-anthropic",
   "tqdm",
   "emoji",
+  "langchain_experimental",
 ]
 
 [envs.default.env-vars]
