@@ -23,7 +23,9 @@ dependencies = [
   "marvin",
   "instructor",
   "anthropic",
-  "langchain-anthropic"
+  "langchain-anthropic",
+  "tqdm",
+  "emoji",
 ]
 
 [envs.default.env-vars]
