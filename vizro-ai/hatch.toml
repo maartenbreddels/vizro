@@ -27,7 +27,8 @@ dependencies = [
   "tqdm",
   "emoji",
   "langchain_experimental==0.0.58",
-  "langchain==0.1.19"
+  "langchain==0.1.19",
+  "black",
 ]
 
 [envs.default.env-vars]
