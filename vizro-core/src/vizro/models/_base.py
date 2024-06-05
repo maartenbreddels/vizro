@@ -201,6 +201,13 @@ class VizroBaseModel(BaseModel):
             # Base case: if it's not a dictionary or list, return the item itself
             return repr(d)  # Use repr to ensure proper representation of strings and other data types
 
+# Ideas
+# - add through dict
+# - similar to type, every new model has a field that we can insert through `include`
+# - how about captured callable? include in self, then hide things in captured callable
+# - unsure where the info lies: CapturedCallable (best case) or models with captured callable field
+
+
     def dict_obj(self,**kwargs):
         d = self.dict(**kwargs)
         d["_add_key"] = self.__class__.__name__
