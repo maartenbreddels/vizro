@@ -105,101 +105,101 @@ class VizroBaseModel(BaseModel):
         new_type.update_forward_refs(**vm.__dict__.copy())
 
 
-    @classmethod
-    @no_type_check
-    def _get_value(
-        cls,
-        v: Any,
-        to_dict: bool,
-        by_alias: bool,
-        include: Optional[Union['AbstractSetIntStr', 'MappingIntStrAny']],
-        exclude: Optional[Union['AbstractSetIntStr', 'MappingIntStrAny']],
-        exclude_unset: bool,
-        exclude_defaults: bool,
-        exclude_none: bool,
-    ) -> Any:
-        if isinstance(v, BaseModel):
-            _add_key = "_add_key"
-            _add_val = v.__class__.__name__
-            if to_dict:
-                v_dict = v.dict(
-                    by_alias=by_alias,
-                    exclude_unset=exclude_unset,
-                    exclude_defaults=exclude_defaults,
-                    include=include,
-                    exclude=exclude,
-                    exclude_none=exclude_none,
-                )
-                if ROOT_KEY in v_dict:
-                    return v_dict[ROOT_KEY]
-                # TODO!: Need to add ability to differentiate when to include the object name in the dict and when not to!!!
-                v_dict[_add_key] = _add_val
-                return v_dict
-            else:
-                return v.copy(include=include, exclude=exclude)
-
-        value_exclude = ValueItems(v, exclude) if exclude else None
-        value_include = ValueItems(v, include) if include else None
-
-        if isinstance(v, dict):
-            return {
-                k_: cls._get_value(
-                    v_,
-                    to_dict=to_dict,
-                    by_alias=by_alias,
-                    exclude_unset=exclude_unset,
-                    exclude_defaults=exclude_defaults,
-                    include=value_include and value_include.for_element(k_),
-                    exclude=value_exclude and value_exclude.for_element(k_),
-                    exclude_none=exclude_none,
-                )
-                for k_, v_ in v.items()
-                if (not value_exclude or not value_exclude.is_excluded(k_))
-                and (not value_include or value_include.is_included(k_))
-            }
-
-        elif sequence_like(v):
-            seq_args = (
-                cls._get_value(
-                    v_,
-                    to_dict=to_dict,
-                    by_alias=by_alias,
-                    exclude_unset=exclude_unset,
-                    exclude_defaults=exclude_defaults,
-                    include=value_include and value_include.for_element(i),
-                    exclude=value_exclude and value_exclude.for_element(i),
-                    exclude_none=exclude_none,
-                )
-                for i, v_ in enumerate(v)
-                if (not value_exclude or not value_exclude.is_excluded(i))
-                and (not value_include or value_include.is_included(i))
-            )
-
-            return v.__class__(*seq_args) if is_namedtuple(v.__class__) else v.__class__(seq_args)
-
-        elif isinstance(v, Enum) and getattr(cls.Config, 'use_enum_values', False):
-            return v.value
-
-        else:
-            return v
-
-    @staticmethod
-    def transform_dict(d):
-        if isinstance(d, dict):
-            if '_add_key' in d:
-                # Prepare the string format by extracting '_add_key' and other content
-                add_key_value = d.pop('_add_key')
-                other_content = ", ".join(f"{key}={VizroBaseModel.transform_dict(value)}" for key, value in d.items())
-                return f"{add_key_value}({other_content})"
-            else:
-                # Recurse through the dictionary
-                return ", ".join(f"{key}={VizroBaseModel.transform_dict(value)}" for key, value in d.items())
-        elif isinstance(d, list):
-            # Recurse through the list, ensure it's formatted as a list but without quotes on strings
-            return "[" + ", ".join(VizroBaseModel.transform_dict(item) for item in d) + "]"
-        else:
-            # Base case: if it's not a dictionary or list, return the item itself
-            return repr(d)  # Use repr to ensure proper representation of strings and other data types
+    # @classmethod
+    # @no_type_check
+    # def _get_value(
+    #     cls,
+    #     v: Any,
+    #     to_dict: bool,
+    #     by_alias: bool,
+    #     include: Optional[Union['AbstractSetIntStr', 'MappingIntStrAny']],
+    #     exclude: Optional[Union['AbstractSetIntStr', 'MappingIntStrAny']],
+    #     exclude_unset: bool,
+    #     exclude_defaults: bool,
+    #     exclude_none: bool,
+    # ) -> Any:
+    #     if isinstance(v, BaseModel):
+    #         _add_key = "_add_key"
+    #         _add_val = v.__class__.__name__
+    #         if to_dict:
+    #             v_dict = v.dict(
+    #                 by_alias=by_alias,
+    #                 exclude_unset=exclude_unset,
+    #                 exclude_defaults=exclude_defaults,
+    #                 include=include,
+    #                 exclude=exclude,
+    #                 exclude_none=exclude_none,
+    #             )
+    #             if ROOT_KEY in v_dict:
+    #                 return v_dict[ROOT_KEY]
+    #             # TODO!: Need to add ability to differentiate when to include the object name in the dict and when not to!!!
+    #             v_dict[_add_key] = _add_val
+    #             return v_dict
+    #         else:
+    #             return v.copy(include=include, exclude=exclude)
+    #
+    #     value_exclude = ValueItems(v, exclude) if exclude else None
+    #     value_include = ValueItems(v, include) if include else None
+    #
+    #     if isinstance(v, dict):
+    #         return {
+    #             k_: cls._get_value(
+    #                 v_,
+    #                 to_dict=to_dict,
+    #                 by_alias=by_alias,
+    #                 exclude_unset=exclude_unset,
+    #                 exclude_defaults=exclude_defaults,
+    #                 include=value_include and value_include.for_element(k_),
+    #                 exclude=value_exclude and value_exclude.for_element(k_),
+    #                 exclude_none=exclude_none,
+    #             )
+    #             for k_, v_ in v.items()
+    #             if (not value_exclude or not value_exclude.is_excluded(k_))
+    #             and (not value_include or value_include.is_included(k_))
+    #         }
+    #
+    #     elif sequence_like(v):
+    #         seq_args = (
+    #             cls._get_value(
+    #                 v_,
+    #                 to_dict=to_dict,
+    #                 by_alias=by_alias,
+    #                 exclude_unset=exclude_unset,
+    #                 exclude_defaults=exclude_defaults,
+    #                 include=value_include and value_include.for_element(i),
+    #                 exclude=value_exclude and value_exclude.for_element(i),
+    #                 exclude_none=exclude_none,
+    #             )
+    #             for i, v_ in enumerate(v)
+    #             if (not value_exclude or not value_exclude.is_excluded(i))
+    #             and (not value_include or value_include.is_included(i))
+    #         )
+    #
+    #         return v.__class__(*seq_args) if is_namedtuple(v.__class__) else v.__class__(seq_args)
+    #
+    #     elif isinstance(v, Enum) and getattr(cls.Config, 'use_enum_values', False):
+    #         return v.value
+    #
+    #     else:
+    #         return v
+    #
+    # @staticmethod
+    # def transform_dict(d):
+    #     if isinstance(d, dict):
+    #         if '_add_key' in d:
+    #             # Prepare the string format by extracting '_add_key' and other content
+    #             add_key_value = d.pop('_add_key')
+    #             other_content = ", ".join(f"{key}={VizroBaseModel.transform_dict(value)}" for key, value in d.items())
+    #             return f"{add_key_value}({other_content})"
+    #         else:
+    #             # Recurse through the dictionary
+    #             return ", ".join(f"{key}={VizroBaseModel.transform_dict(value)}" for key, value in d.items())
+    #     elif isinstance(d, list):
+    #         # Recurse through the list, ensure it's formatted as a list but without quotes on strings
+    #         return "[" + ", ".join(VizroBaseModel.transform_dict(item) for item in d) + "]"
+    #     else:
+    #         # Base case: if it's not a dictionary or list, return the item itself
+    #         return repr(d)  # Use repr to ensure proper representation of strings and other data types
 
 # Ideas
 # - add through dict
@@ -208,10 +208,10 @@ class VizroBaseModel(BaseModel):
 # - unsure where the info lies: CapturedCallable (best case) or models with captured callable field
 
 
-    def dict_obj(self,**kwargs):
-        d = self.dict(**kwargs)
-        d["_add_key"] = self.__class__.__name__
-        return VizroBaseModel.transform_dict(d)
+    # def dict_obj(self,**kwargs):
+    #     d = self.dict(**kwargs)
+    #     d["_add_key"] = self.__class__.__name__
+    #     return VizroBaseModel.transform_dict(d)
 
 
 
