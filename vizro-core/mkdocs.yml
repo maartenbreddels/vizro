@@ -51,6 +51,7 @@ nav:
   - Examples:
       - Example dashboard code: pages/examples/examples.md
       - Examples from Vizro users: pages/examples/your-examples.md
+  - Gallery: pages/examples/gallery.md
   - Vizro-AI:
       - Vizro-AI: https://vizro.readthedocs.io/projects/vizro-ai/en/latest/
 
@@ -75,7 +76,7 @@ theme:
     - navigation.tracking
     - search.suggest
     - search.highlight
-    - content.tabs.link
+#    - content.tabs.link
     - content.code.annotation
     - content.code.copy
     - content.code.annotate
