@@ -300,3 +300,7 @@ hide:
     
     [Demo_screenshot]: ../../assets/gallery/Demo_dashboard.png
 
+## PyCafe dashboard
+<div class="pycafe">  
+    <iframe src="https://py.cafe/app/maxi.schulz/dash-styling-colors" width="100%" height="400px"></iframe>
+</div>
