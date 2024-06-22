@@ -29,7 +29,8 @@ except ImportError:  # pragma: no cov
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-model_default = "gpt-3.5-turbo"
+# model_default = "gpt-3.5-turbo"
+model_default = "claude-3-sonnet-20240229"
 # model_default = "gpt-4-turbo"
 # set_debug(True)
 
@@ -78,11 +79,14 @@ def _store_df_info(state: GraphState):
     current_df_names = []
     for _, df in enumerate(dfs):
         df_schema, df_sample = _get_df_info(df)
-        data_sum_chain = df_sum_prompt | _get_llm_model(model=model_default).with_structured_output(DfInfo)
+        # data_sum_chain = df_sum_prompt | _get_llm_model(model=model_default).with_structured_output(DfInfo)
+        data_sum_chain = _get_llm_model(model=model_default).with_structured_output(DfInfo)
 
-        df_name = data_sum_chain.invoke(
-            {"df_schema": df_schema, "df_sample": df_sample, "messages": messages, "current_df_names": current_df_names}
-        )
+        print(messages)
+        # df_name = data_sum_chain.invoke(
+        #     {"messages": messages, "current_df_names": current_df_names, "df_schema": df_schema, "df_sample": df_sample}
+        # )
+        df_name = data_sum_chain.invoke(messages)
 
         current_df_names.append(df_name)
 
