@@ -53,7 +53,7 @@ def update(_, rows):
 def update_dash_table(n_dlt, n_add, data):
     if ctx.triggered_id == "add-row-btn":
         new_row = {
-            "date": ["01/01/2020"],
+            "date": ["2020-01-01"],
             "value": [0.0]
         }
         df_new_row = pd.DataFrame(new_row)
