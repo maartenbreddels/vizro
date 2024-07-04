@@ -1,69 +1,100 @@
 """Dev app to try things out."""
-
-from typing import Optional
-
-import dash_bootstrap_components as dbc
-import pandas as pd
 import vizro.models as vm
 import vizro.plotly.express as px
-from dash import html
+import plotly.graph_objects as go
 from vizro import Vizro
-from vizro.figures import kpi_card
-from vizro.models.types import capture
+from vizro.tables import dash_ag_grid
+from dash import Input, Output, State, callback, no_update, ctx
+import pandas as pd
 
-tips = px.data.tips
+df = pd.DataFrame({
+    "date": pd.Series(dtype="datetime64[ns]"),
+    "value": pd.Series(dtype="float")
+})
 
+columnDefs = [
+    {"headerName": "Date", "field": "date", "editable": True, "cellEditor": "datePicker","checkboxSelection": True},
+    {"headerName": "Value", "field": "value", "editable": True, "cellEditor": "numericEditor"},
+]
 
-@capture("figure")  # (1)!
-def custom_kpi_card(  # noqa: PLR0913
-    data_frame: pd.DataFrame,
-    value_column: str,
-    *,
-    value_format: str = "{value}",
-    agg_func: str = "sum",
-    title: Optional[str] = None,
-    icon: Optional[str] = None,
-) -> dbc.Card:  # (2)!
-    """Creates a custom KPI card."""
-    title = title or f"{agg_func} {value_column}".title()
-    value = data_frame[value_column].agg(agg_func)
+empty_figure = go.Figure(
+                    layout={
+                        "title": "Timeline of input data",
+                        "paper_bgcolor": "rgba(0,0,0,0)",
+                        "plot_bgcolor": "rgba(0,0,0,0)",
+                        "xaxis": {"visible": False},
+                        "yaxis": {"visible": False},
+                    }
+                )
 
-    header = dbc.CardHeader(
-        [
-            html.H2(title),
-            html.P(icon, className="material-symbols-outlined") if icon else None,  # (3)!
-        ]
-    )
-    body = dbc.CardBody([value_format.format(value=value)])
-    return dbc.Card([header, body], className="card-kpi")
+#update the chart based on the edited table
+@callback(
+    Output("output_chart", "figure", allow_duplicate=True),
+    Input("__input_editing-grid2", "cellValueChanged"),
+    Input("__input_editing-grid2", "rowData"),
+    prevent_initial_call=True
+)
+def update(_, rows):
+    dff = pd.DataFrame(rows)
+    if dff.empty:
+        return empty_figure
+    fig = px.line(dff,title = "Timeline of input data", x="date", y="value")
+    return fig
 
+# add or delete rows of table
+@callback(
+    Output("__input_editing-grid2", "deleteSelectedRows"),
+    Output("__input_editing-grid2", "rowData"),
+    Input("delete-row-btn", "n_clicks"),
+    Input("add-row-btn", "n_clicks"),
+    State("__input_editing-grid2", "rowData"),
+    prevent_initial_call=True,
+)
+def update_dash_table(n_dlt, n_add, data):
+    if ctx.triggered_id == "add-row-btn":
+        new_row = {
+            "date": ["01/01/2020"],
+            "value": [0.0]
+        }
+        df_new_row = pd.DataFrame(new_row)
+        updated_table = pd.concat([pd.DataFrame(data), df_new_row])
+        return False, updated_table.to_dict("records")
+
+    elif ctx.triggered_id == "delete-row-btn":
+        return True, no_update
 
 page = vm.Page(
-    title="Create your own KPI card",
-    layout=vm.Layout(grid=[[0, 1, -1, -1]] + [[-1, -1, -1, -1]] * 3),  # (4)!
+    title="Example of adding rows to AG Grid and updating a chart based on the edited table",
+    layout=vm.Layout(grid = [
+        [0,0,0,0,1,1,1,1],
+        [0,0,0,0,1,1,1,1],
+        [0,0,0,0,1,1,1,1],
+        [2,3,-1,-1,-1,-1,-1,-1],
+        ] ),
     components=[
-        vm.Figure(
-            figure=kpi_card(  # (5)!
-                data_frame=tips,
-                value_column="tip",
-                value_format="${value:.2f}",
-                icon="shopping_cart",
-                title="Default KPI card",
-            )
+        vm.AgGrid(
+            id = "editing-grid2",
+            title="Editable Table / AG Grid",
+            figure=dash_ag_grid(
+                data_frame=df,
+                columnDefs=columnDefs,
+                defaultColDef={"editable": True},
+                columnSize="sizeToFit",
+                dashGridOptions={"rowSelection": "multiple", "suppressRowClickSelection": True},
+            ),
         ),
-        vm.Figure(
-            figure=custom_kpi_card(  # (6)!
-                data_frame=tips,
-                value_column="tip",
-                value_format="${value:.2f}",
-                icon="payment",
-                title="Custom KPI card",
-            )
+        vm.Graph(id = "output_chart",figure = px.line(df, title = "Timeline of input data",x="date", y="value")),
+        vm.Button(
+            id="delete-row-btn",
+            text="Delete row",
+        ),
+        vm.Button(
+            id="add-row-btn",
+            text="Add row",
         ),
     ],
 )
 
 dashboard = vm.Dashboard(pages=[page])
 
-if __name__ == "__main__":
-    Vizro().build(dashboard).run()
+Vizro().build(dashboard).run(debug=True)
