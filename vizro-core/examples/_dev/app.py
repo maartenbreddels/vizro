@@ -32,13 +32,15 @@ empty_figure = go.Figure(
     Output("output_chart", "figure", allow_duplicate=True),
     Input("__input_editing-grid2", "cellValueChanged"),
     Input("__input_editing-grid2", "rowData"),
+    Input("theme_selector", "checked"),
     prevent_initial_call=True
 )
-def update(_, rows):
+def update(_, rows,theme_selector):
     dff = pd.DataFrame(rows)
     if dff.empty:
         return empty_figure
     fig = px.line(dff,title = "Timeline of input data", x="date", y="value")
+    fig.update_layout(template="vizro_light" if theme_selector else "vizro_dark") #to get the theme right
     return fig
 
 # add or delete rows of table
