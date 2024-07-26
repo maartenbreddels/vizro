@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 from vizro_ai.chains._llm_models import _get_llm_model, _get_model_name
 from vizro_ai.components import GetCodeExplanation, GetDebugger
 from vizro_ai.dashboard.graph.dashboard_creation import _create_and_compile_graph
-from vizro_ai.dashboard.utils import DashboardOutputs, DfMetadata, _dashboard_code, _run_dashboard
+from vizro_ai.dashboard.utils import DashboardOutputs, DfMetadata, _dashboard_code
 from vizro_ai.task_pipeline._pipeline_manager import PipelineManager
 from vizro_ai.utils.helper import (
     DebugFailure,
@@ -160,10 +160,19 @@ class VizroAI:
 
         return vizro_plot if return_elements else vizro_plot.figure
 
+    # def _register_data(dashboard: vm.Dashboard, df_metadata: DfMetadata) -> vm.Dashboard:
+    #     """Run the dashboard."""
+    #     from vizro.managers import data_manager
+
+    #     for name, metadata in df_metadata.metadata.items():
+    #         data_manager[name] = metadata.df
     @staticmethod
-    def run_dashboard(dashboard: vm.Dashboard, df_metadata: DfMetadata) -> None:
-        """Run the dashboard."""
-        _run_dashboard(dashboard=dashboard, df_metadata=df_metadata)
+    def _register_data(df_metadata: DfMetadata) -> vm.Dashboard:
+        """Register the dashboard data in data manager."""
+        from vizro.managers import data_manager
+
+        for name, metadata in df_metadata.metadata.items():
+            data_manager[name] = metadata.df
 
     def dashboard(
         self,
@@ -197,11 +206,11 @@ class VizroAI:
             config=config,
         )
         dashboard = message_res["dashboard"]
-        metadata = message_res["df_metadata"]
+        self._register_data(df_metadata=message_res["df_metadata"])
 
         if return_elements:
             code = _dashboard_code(dashboard)  # TODO: `_dashboard_code` to be implemented
-            dashboard_output = DashboardOutputs(dashboard=dashboard, code=code, metadata=metadata)
+            dashboard_output = DashboardOutputs(dashboard=dashboard, code=code)
             return dashboard_output
         else:
             return dashboard
