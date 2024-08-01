@@ -70,3 +70,85 @@ def _dashboard_code(dashboard: vm.Dashboard) -> str:
         return dashboard.to_python()
     except AttributeError:
         return "Dashboard code generation is coming soon!"
+
+
+import base64
+from PIL import Image
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from langchain.schema import HumanMessage
+
+def load_image(image_path):
+    """
+    Load an image from a local file path, convert it to base64,
+    and return as a numpy array and base64 string.
+    """
+    with open(image_path, "rb") as image_file:
+        image_data = base64.b64encode(image_file.read()).decode("utf-8")
+    
+    img = Image.open(image_path)
+    return np.array(img), image_data
+
+def get_image_data(**kwargs):
+    """
+    Load images and return a list of their base64-encoded data.
+    
+    :param kwargs: Should contain 'image_paths' key with a list of file paths
+    :return: List of base64-encoded image data
+    """
+    image_paths = kwargs.get('image_paths', [])
+    return [load_image(path)[1] for path in image_paths]
+
+def create_image_subplot(fig, img_array, row, col, title=None):
+    """Add an image as a subplot to the figure."""
+    fig.add_trace(
+        go.Image(z=img_array),
+        row=row, col=col
+    )
+    if title:
+        fig.update_xaxes(title_text=title, row=row, col=col)
+
+def display_images(image_paths, titles=None, ncols=2):
+    """Display multiple images in a grid layout."""
+    n_images = len(image_paths)
+    nrows = (n_images - 1) // ncols + 1
+
+    fig = make_subplots(rows=nrows, cols=ncols, subplot_titles=titles)
+
+    for i, path in enumerate(image_paths):
+        img_array, _ = load_image(path)
+        row = i // ncols + 1
+        col = i % ncols + 1
+        create_image_subplot(fig, img_array, row, col)
+
+    fig.update_layout(
+        showlegend=False,
+        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False)
+    )
+
+    fig.show()
+
+def construct_message(images, question):
+    """
+    Construct a HumanMessage with a dynamic number of images.
+    
+    :param images: List of base64-encoded image data
+    :param question: The question to ask about the images
+    :return: HumanMessage object
+    """
+    content = [{"type": "text", "text": question}]
+    for img_data in images:
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{img_data}"}
+        })
+    return HumanMessage(content=content)
+
+# Example usage
+image_paths = [
+    "/Users/lingyi_zhang/vizx/os/world data/page1.png",
+    "/Users/lingyi_zhang/vizx/os/world data/page2.png",
+]
+titles = ["First Image", "Second Image"]

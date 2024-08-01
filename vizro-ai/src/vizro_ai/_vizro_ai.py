@@ -9,7 +9,8 @@ from langchain_openai import ChatOpenAI
 
 from vizro_ai._llm_models import _get_llm_model, _get_model_name
 from vizro_ai.dashboard._graph.dashboard_creation import _create_and_compile_graph
-from vizro_ai.dashboard.utils import DashboardOutputs, _dashboard_code, _register_data
+from vizro_ai.dashboard._graph.image_to_dashboard import _image_to_dashboard_graph
+from vizro_ai.dashboard.utils import DashboardOutputs, _dashboard_code, _register_data, get_image_data, construct_message
 from vizro_ai.plot.components import GetCodeExplanation, GetDebugger
 from vizro_ai.plot.task_pipeline._pipeline_manager import PipelineManager
 from vizro_ai.utils.helper import (
@@ -23,6 +24,26 @@ from vizro_ai.utils.helper import (
 
 logger = logging.getLogger(__name__)
 
+
+PLACEHOLDER_MESSAGE = """
+IMPORTANT: Please always output your response by using a tool.
+You are a front-end developer with expertise in Plotly, Dash, and the visualization library named Vizro.
+1. Describe how many dashboard pages do you see.
+2. Describe what do you see in each page with following aspects:
+
+<Vizro components>
+you might see `Card (which is a container holding text)`, `Graph`, or `AgGrid`.
+If you see a AgGrid, only describe the content subject, not the columns or data.
+
+<Vizro controls>
+you might see filters using different selectors, including Dropdown, Checklist, Dropdown, RadioItems, RangeSlider, Slider, DatePicker.
+
+<Vizro Layout>
+Vizro `Layout` is only relevant to Vizro components, please only describe the positions of all Vizro components (Card, Graph, AgGrid). 
+When describing layout, ignore space took by controls.
+
+Important, if there are any text you see, accurately describe the original text. if charts are colored by a specific column, specify that.
+"""
 
 class VizroAI:
     """Vizro-AI main class."""
@@ -125,7 +146,7 @@ class VizroAI:
         df: pd.DataFrame,
         user_input: str,
         explain: bool = False,
-        max_debug_retry: int = 3,
+        max_debug_retry: int = 1,
         return_elements: bool = False,
     ) -> Union[go.Figure, PlotOutputs]:
         """Plot visuals using vizro via english descriptions, english to chart translation.
@@ -144,6 +165,11 @@ class VizroAI:
         vizro_plot = self._run_plot_tasks(
             df=df, user_input=user_input, explain=explain, max_debug_retry=max_debug_retry
         )
+        # _display_markdown(
+        #         code_snippet=vizro_plot.code,
+        #         biz_insights=vizro_plot.business_insights,
+        #         code_explain=vizro_plot.code_explanation,
+        #     )
 
         if not explain:
             logger.info(
@@ -200,3 +226,52 @@ class VizroAI:
             return dashboard_output
         else:
             return dashboard
+
+
+    # def image_to_dashboard(
+    #     self,
+    #     dfs: List[pd.DataFrame],
+    #     user_input: Any,  #<----- place holder for image paths
+    #     return_elements: bool = False,
+    # ) -> Union[DashboardOutputs, vm.Dashboard]:
+    #     """Creates a Vizro dashboard using english descriptions.
+
+    #     Args:
+    #         dfs: The dataframes to be analyzed.
+    #         user_input: User questions or descriptions of the desired visual.
+    #         return_elements: Flag to return DashboardOutputs dataclass that includes all possible elements generated.
+
+    #     Returns:
+    #         vm.Dashboard or DashboardOutputs dataclass.
+
+    #     """
+    #     runnable = _image_to_dashboard_graph()
+
+    #     image_paths = [
+    #         "/Users/lingyi_zhang/vizx/os/world data/page1.png",
+    #         "/Users/lingyi_zhang/vizx/os/world data/page2.png",
+    #     ]
+    #     images = get_image_data(image_paths=image_paths)
+    #     message = construct_message(images, PLACEHOLDER_MESSAGE)
+
+    #     config = {"configurable": {"model": self.model}}
+    #     message_res = runnable.invoke(
+    #         {
+    #             "dfs": dfs,
+    #             "all_df_metadata": {},
+    #             "dashboard_plan": None,
+    #             "pages": [],
+    #             "dashboard": None,
+    #             "messages": [message],
+    #         },
+    #         config=config,
+    #     )
+    #     dashboard = message_res["dashboard"]
+    #     _register_data(all_df_metadata=message_res["all_df_metadata"])
+
+    #     if return_elements:
+    #         code = _dashboard_code(dashboard)  # TODO: `_dashboard_code` to be implemented
+    #         dashboard_output = DashboardOutputs(dashboard=dashboard, code=code)
+    #         return dashboard_output
+    #     else:
+    #         return dashboard
