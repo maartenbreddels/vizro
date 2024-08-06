@@ -23,14 +23,16 @@ df["Year"] = df["Connected On"].dt.year
 def role_bar_chart(data_frame, top_n=5):
     data_frame = data_frame["Position"].value_counts().nlargest(top_n).reset_index(name="Frequency")
     data_frame = data_frame.sort_values(by="Frequency", ascending=True)
-    fig = px.bar(data_frame, x="Frequency", y="Position", title=f"Top {top_n} most frequent positions")
+    fig = px.bar(data_frame, x="Frequency", y="Position", title=f"Top {top_n} positions of my connections 💼")
+
+    fig.update_layout(xaxis_title="Number of people")
     return fig
 
 
 @capture("graph")
 def company_pie_chart(data_frame, top_n=5):
     title_with_subtitle = (
-        f"Top {top_n} most connected companies 💼</span><br>"
+        f"Top {top_n} most connected companies 🏢</span><br>"
         + f"<span style='font-size: 14px;'>Shows top {top_n} companies by connections, with all others grouped as 'Others'</span>"
     )
 
@@ -93,19 +95,15 @@ page = vm.Page(
         vm.Graph(figure=growth_cumulative_chart(data_frame=df)),
     ],
     controls=[
-        vm.Filter(
-            column="Position",
-            selector=vm.Dropdown(options=df["Position"].value_counts().loc[lambda x: x >= 5].index.tolist()),
-        ),
-        vm.Filter(column="Company"),
         vm.Parameter(
             targets=["role_chart_id.top_n"],
-            selector=vm.Slider(min=0, max=30, step=5, value=25, title="Top N roles"),
+            selector=vm.Slider(min=0, max=30, step=5, value=25, title="Show top n positions:"),
         ),
         vm.Parameter(
             targets=["company_chart_id.top_n"],
-            selector=vm.Slider(min=1, max=10, step=1, value=5, title="Top N companies"),
+            selector=vm.Slider(min=1, max=10, step=1, value=5, title="Show top n companies:"),
         ),
+        vm.Filter(column="Company"),
         vm.Filter(column="Year", selector=vm.RangeSlider(step=1, marks=None)),
     ],
 )
