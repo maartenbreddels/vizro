@@ -42,7 +42,7 @@ def company_pie_chart(data_frame, top_n=5):
     df_agg = data_frame["Company"].value_counts().reset_index()
 
     title_with_subtitle = (
-        f"Top {top_n} most connected companies 🏢</span><br><span style='font-size: 14px;'>Shows top {top_n} "
+        f"Top {top_n} companies of my connections 🏢</span><br><span style='font-size: 14px;'>Shows top {top_n} "
         f"companies by connections, with all others grouped as 'Others'</span>"
     )
     fig = px.pie(
