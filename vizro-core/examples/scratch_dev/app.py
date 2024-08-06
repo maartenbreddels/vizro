@@ -50,7 +50,7 @@ def company_pie_chart(data_frame, top_n=5):
         names="Company",
         values="count",
         color_discrete_sequence=["rgba(108, 122, 137, 0.3)"] + COLORS["DISCRETE_10"],
-        hole=0.4,
+        hole=0.5,
     )
     fig.update_layout(legend=dict(x=1, y=1, orientation="v"), title=title_with_subtitle, title_pad_t=24)
     return fig
@@ -76,7 +76,7 @@ def growth_cumulative_chart(data_frame):
         secondary_y=True,
     )
     fig.update_layout(
-        title="Per Year and Cumulative Connections 📈",
+        title="Yearly growth of my connections 📈",
         yaxis=dict(tickmode="sync", title=dict(text="Per Year Connections [Bar]", font_size=14)),
         yaxis2=dict(tickmode="sync", overlaying="y", title=dict(text="Cumulative Connections [Line]", font_size=14)),
     )
