@@ -3,8 +3,10 @@
 import random
 
 import pandas as pd
+import plotly.graph_objects as go
 import vizro.models as vm
 import vizro.plotly.express as px
+from plotly.subplots import make_subplots
 from vizro import Vizro
 from vizro._themes._color_values import COLORS
 from vizro.models.types import capture
@@ -22,7 +24,7 @@ icons = ["👨", "👩", "👧", "👦", "🧒"]
 
 
 @capture("graph")
-def role_chart(data_frame, top_n=5):
+def role_bar_chart(data_frame, top_n=5):
     # Sample data preparation
     data_frame = data_frame["Position"].value_counts().nlargest(top_n).reset_index(name="Frequency")
     data_frame = data_frame.sort_values(by="Frequency", ascending=True)
@@ -48,7 +50,7 @@ def role_chart(data_frame, top_n=5):
 
 
 @capture("graph")
-def company_chart(data_frame, top_n=10):
+def company_pie_chart(data_frame, top_n=10):
     title_with_subtitle = (
         f"Top {top_n} most connected companies 💼</span><br>"
         + f"<span style='font-size: 14px;'>Shows top {top_n} companies by connections, with all others grouped as 'Others'</span>"
@@ -73,39 +75,43 @@ def company_chart(data_frame, top_n=10):
 
 @capture("graph")
 def growth_cumulative_chart(data_frame):
-    # Plot the growth of my connections over time
     data_frame = data_frame.groupby("Year").size().reset_index(name="Count per Year")
     data_frame["Cumulative Yearly Connections"] = data_frame["Count per Year"].cumsum()
 
-    line_fig = px.line(
-        data_frame, x="Year", y="Cumulative Yearly Connections", color=px.Constant("Cumulative Connections")
-    )
-    line_fig.update_traces(yaxis="y2", line_color="#F08D41")
+    # Create subplot with secondary y-axis
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    bar_fig = px.bar(
-        data_frame,
-        x="Year",
-        y="Count per Year",
-        color=px.Constant("Count per Year"),
-        title="Yearly growth of my connections",
-    )
-    bar_fig.add_traces(line_fig.data)
-
-    bar_fig.update_layout(
-        yaxis=dict(title="Per Year Connections [Bar]"),
-        yaxis2=dict(title="Cumulative Connections [Line]", overlaying="y", side="right"),
-        legend=dict(title="", yanchor="bottom", y=1, xanchor="right", x=1),
+    # Add bar trace
+    fig.add_trace(
+        go.Bar(x=data_frame["Year"], y=data_frame["Count per Year"], name="Per Year Connections"),
+        secondary_y=False,
     )
 
-    return bar_fig
+    # Add line trace
+    fig.add_trace(
+        go.Scatter(
+            x=data_frame["Year"],
+            y=data_frame["Cumulative Yearly Connections"],
+            name="Cumulative Connections",
+        ),
+        secondary_y=True,
+    )
+
+    # Synchronise dual y-axis
+    fig.update_layout(
+        title="Per Year and Cumulative Connections 📈",
+        yaxis=dict(tickmode="sync", title=dict(text="Per Year Connections [Bar]", font_size=14)),
+        yaxis2=dict(tickmode="sync", overlaying="y", title=dict(text="Cumulative Connections [Line]", font_size=14)),
+    )
+    return fig
 
 
 page = vm.Page(
     title="LinkedIn data",
     layout=vm.Layout(grid=[[0, 1], [0, 2]]),
     components=[
-        vm.Graph(id="role_chart_id", figure=role_chart(data_frame=df)),
-        vm.Graph(id="company_chart_id", figure=company_chart(data_frame=df)),
+        vm.Graph(id="role_chart_id", figure=role_bar_chart(data_frame=df)),
+        vm.Graph(id="company_chart_id", figure=company_pie_chart(data_frame=df)),
         vm.Graph(figure=growth_cumulative_chart(data_frame=df)),
     ],
     controls=[
