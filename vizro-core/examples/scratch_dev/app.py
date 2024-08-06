@@ -1,7 +1,5 @@
 """Dev app to try things out."""
 
-import random
-
 import pandas as pd
 import plotly.graph_objects as go
 import vizro.models as vm
@@ -20,37 +18,17 @@ df["Connected On"] = pd.to_datetime(df["Connected On"], format="%d-%b-%y")
 df.set_index("Connected On", drop=False, inplace=True)
 df["Year"] = df["Connected On"].dt.year
 
-icons = ["👨", "👩", "👧", "👦", "🧒"]
-
 
 @capture("graph")
 def role_bar_chart(data_frame, top_n=5):
-    # Sample data preparation
     data_frame = data_frame["Position"].value_counts().nlargest(top_n).reset_index(name="Frequency")
     data_frame = data_frame.sort_values(by="Frequency", ascending=True)
-
-    # Create a new DataFrame to hold the dots
-    dot_list = []
-    for i, row in data_frame.iterrows():
-        dot_list.append(
-            pd.DataFrame(
-                {
-                    "Position": [row["Position"]] * row["Frequency"],
-                    "Frequency": list(range(1, row["Frequency"] + 1)),
-                    "Icon": [random.choice(icons) for _ in range(row["Frequency"])],
-                }
-            )
-        )
-    dots_df = pd.concat(dot_list, ignore_index=True)
-
-    fig = px.scatter(dots_df, x="Frequency", y="Position", title=f"Top {top_n} most frequent positions", text="Icon")
-    fig.update_layout(yaxis=dict(showgrid=False))
-
+    fig = px.bar(data_frame, x="Frequency", y="Position", title=f"Top {top_n} most frequent positions")
     return fig
 
 
 @capture("graph")
-def company_pie_chart(data_frame, top_n=10):
+def company_pie_chart(data_frame, top_n=5):
     title_with_subtitle = (
         f"Top {top_n} most connected companies 💼</span><br>"
         + f"<span style='font-size: 14px;'>Shows top {top_n} companies by connections, with all others grouped as 'Others'</span>"
@@ -122,9 +100,7 @@ page = vm.Page(
         vm.Filter(column="Company"),
         vm.Parameter(
             targets=["role_chart_id.top_n"],
-            selector=vm.Slider(
-                min=1, max=30, step=1, marks={1: "1", 10: "10", 20: "20", 30: "30"}, value=30, title="Top N roles"
-            ),
+            selector=vm.Slider(min=0, max=30, step=5, value=25, title="Top N roles"),
         ),
         vm.Parameter(
             targets=["company_chart_id.top_n"],
