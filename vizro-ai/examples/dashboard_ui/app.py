@@ -10,7 +10,8 @@ from components import (
     OffCanvas,
     UserPromptTextArea,
     UserUpload,
-    CustomDashboard
+    CustomDashboard,
+    Icon
 )
 
 from dash.exceptions import PreventUpdate
@@ -25,16 +26,35 @@ SUPPORTED_MODELS = [
     "gpt-3.5-turbo",
     "gpt-4o",
 ]
+vm.Container.add_type("components", UserUpload)
+vm.Container.add_type("components", MyDropdown)
+vm.Container.add_type("components", OffCanvas)
+vm.Container.add_type("components", CodeClipboard)
+vm.Container.add_type("components", Icon)
+
+MyPage.add_type("components", UserPromptTextArea)
+MyPage.add_type("components", UserUpload)
+MyPage.add_type("components", MyDropdown)
+MyPage.add_type("components", OffCanvas)
+MyPage.add_type("components", CodeClipboard)
+MyPage.add_type("components", Icon)
 
 dashboard_page = MyPage(
     id="vizro_ai_dashboard_page",
     title="Vizro AI - Dashboard",
     layout=vm.Layout(
+        # grid=[
+        #     *[[0, 0, 0, 0]] * 6,
+        #     [1, 1, 1, 1],
+        #     [2, 2, 2, 2],
+        #     [3, 3, 3, 3],
+        # ]
         grid=[
-            *[[0, 0, 0, 0]] * 6,
-            [1, 1, 1, 1],
-            [2, 2, 2, 2],
-            [3, 3, 3, 3],
+            [2, 2, 0, 0, 0],
+            [1, 1, 0, 0, 0],
+            [1, 1, 0, 0, 0],
+            [3, 3, 0, 0, 0]
+
         ]
     ),
     components=[
@@ -71,23 +91,10 @@ dashboard_page = MyPage(
                 vm.Button(
                     id="dashboard-trigger-button",
                     text="Run VizroAI",
-                    # actions=[
-                    #     vm.Action(
-                    #         function=run_vizro_ai_dashboard(),
-                    #         inputs=[
-                    #             "dashboard-text-area.value",
-                    #             "dashboard-trigger-button.n_clicks",
-                    #             "dashboard-data-store.data",
-                    #             "dashboard-model-dropdown.value",
-                    #             "dashboard-api-store.data",
-                    #         ],
-                    #         outputs=["dashboard_code-markdown.children", "dashboard-outputs-store.data"],
-                    #     ),
-                    # ],
                 ),
                 MyDropdown(options=SUPPORTED_MODELS, value="gpt-3.5-turbo", multi=False, id="dashboard-model-dropdown"),
-                vm.Button(id="dashboard-open_canvas", text="Settings"),
-                OffCanvas(id="dashboard-offcanvas-id", options=["ChatOpenAI"], value="ChatOpenAI"),
+                vm.Button(id="dashboard-open_settings", text="Settings"),
+                OffCanvas(id="dashboard-settings", options=["ChatOpenAI"], value="ChatOpenAI"),
             ],
         ),
     ],
