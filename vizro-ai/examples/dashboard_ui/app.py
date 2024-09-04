@@ -1,39 +1,35 @@
-"""VizroAI UI dashboard configuration."""
+import logging
 
+import black
+from langchain_openai import ChatOpenAI
+from vizro.models.types import capture
+from vizro_ai import VizroAI
+
+from dash import Input, Output, State, callback, dcc
+
+import pandas as pd
 import json
 
 import dash_bootstrap_components as dbc
 import pandas as pd
 import vizro.models as vm
 import vizro.plotly.express as px
-from actions import data_upload_action, display_filename, run_vizro_ai
+from actions import run_vizro_ai_dashboard
+import vizro.models as vm
 from components import (
     CodeClipboard,
-    CustomDashboard,
-    Icon,
     MyDropdown,
     MyPage,
     OffCanvas,
     UserPromptTextArea,
     UserUpload,
+    CustomDashboard
 )
+
+from dash.exceptions import PreventUpdate
 from dash import Input, Output, State, callback, get_asset_url, html
 from dash.exceptions import PreventUpdate
 from vizro import Vizro
-
-vm.Container.add_type("components", UserUpload)
-vm.Container.add_type("components", MyDropdown)
-vm.Container.add_type("components", OffCanvas)
-vm.Container.add_type("components", CodeClipboard)
-vm.Container.add_type("components", Icon)
-
-MyPage.add_type("components", UserPromptTextArea)
-MyPage.add_type("components", UserUpload)
-MyPage.add_type("components", MyDropdown)
-MyPage.add_type("components", OffCanvas)
-MyPage.add_type("components", CodeClipboard)
-MyPage.add_type("components", Icon)
-
 
 SUPPORTED_MODELS = [
     "gpt-4o-mini",
@@ -43,132 +39,128 @@ SUPPORTED_MODELS = [
     "gpt-4o",
 ]
 
-
-plot_page = MyPage(
-    id="vizro_ai_plot_page",
-    title="Vizro-AI - effortlessly create interactive charts with Plotly",
+dashboard_page = MyPage(
+    id="vizro_ai_dashboard_page",
+    title="Vizro AI - Dashboard",
     layout=vm.Layout(
         grid=[
-            [3, 3, -1, 5],
-            [1, 1, 2, 2],
-            [4, 4, 2, 2],
-            *[[0, 0, 2, 2]] * 6,
+            *[[0, 0, 0, 0]] * 6,
+            [1, 1, 1, 1],
+            [2, 2, 2, 2],
+            [3, 3, 3, 3],
         ]
     ),
     components=[
-        vm.Container(title="", components=[CodeClipboard(id="plot")]),
+        vm.Container(title="", components=[CodeClipboard(id="dashboard")]),
         UserPromptTextArea(
-            id="text-area-id",
+            id="dashboard-text-area",
         ),
-        vm.Graph(id="graph-id", figure=px.scatter(pd.DataFrame())),
         vm.Container(
             title="",
-            layout=vm.Layout(grid=[[1], [0]], row_gap="0px"),
+            layout=vm.Layout(grid=[[0], [1]], row_gap="0px"),
             components=[
                 UserUpload(
-                    id="data-upload-id",
-                    actions=[
-                        vm.Action(
-                            function=data_upload_action(),
-                            inputs=["data-upload-id.contents", "data-upload-id.filename"],
-                            outputs=["data-store-id.data"],
-                        ),
-                        vm.Action(
-                            function=display_filename(),
-                            inputs=["data-store-id.data"],
-                            outputs=["upload-message-id.children"],
-                        ),
-                    ],
+                    id="dashboard-data-upload",
+                    # actions=[
+                    #     vm.Action(
+                    #         function=data_upload_action(),
+                    #         inputs=["dashboard-data-upload.contents", "dashboard-data-upload.filename"],
+                    #         outputs=["dashboard-data-store.data"],
+                    #     ),
+                    #     vm.Action(
+                    #         function=display_filename(),
+                    #         inputs=["dashboard-data-store.data"],
+                    #         outputs=["dashboard-upload-message-id.children"],
+                    #     ),
+                    # ],
                 ),
-                vm.Card(id="upload-message-id", text="Upload your data file (csv or excel)"),
+                vm.Card(id="dashboard-upload-message-id", text="Upload your data files (csv or excel)"),
             ],
         ),
         vm.Container(
             title="",
-            layout=vm.Layout(grid=[[2, -1, -1, -1, -1, 1, 1, 0, 0]], row_gap="0px", col_gap="4px"),
+            layout=vm.Layout(grid=[[0, 0, 1, 1, -1, -1, -1, 2, 3]], row_gap="0px", col_gap="4px"),
             components=[
                 vm.Button(
-                    id="trigger-button-id",
+                    id="dashboard-trigger-button",
                     text="Run VizroAI",
                     actions=[
                         vm.Action(
-                            function=run_vizro_ai(),
+                            function=run_vizro_ai_dashboard(),
                             inputs=[
-                                "text-area-id.value",
-                                "trigger-button-id.n_clicks",
-                                "data-store-id.data",
-                                "model-dropdown-id.value",
-                                "settings-api-key.value",
-                                "settings-api-base.value",
-                                "settings-dropdown.value",
+                                "dashboard-text-area.value",
+                                "dashboard-trigger-button.n_clicks",
+                                "dashboard-data-store.data",
+                                "dashboard-model-dropdown.value",
+                                "dashboard-api-store.data",
                             ],
-                            outputs=["plot-code-markdown.children", "graph-id.figure", "outputs-store-id.data"],
+                            outputs=["dashboard_code-markdown.children", "dashboard-outputs-store.data"],
                         ),
                     ],
                 ),
-                MyDropdown(options=SUPPORTED_MODELS, value="gpt-4o-mini", multi=False, id="model-dropdown-id"),
-                OffCanvas(id="settings", options=["OpenAI"], value="OpenAI"),
+                MyDropdown(options=SUPPORTED_MODELS, value="gpt-3.5-turbo", multi=False, id="dashboard-model-dropdown"),
+                vm.Button(id="dashboard-open_canvas", text="Settings"),
+                OffCanvas(id="dashboard-offcanvas-id", options=["ChatOpenAI"], value="ChatOpenAI"),
             ],
         ),
-        Icon(id="open-settings-id"),
     ],
 )
 
+dashboard = CustomDashboard(pages=[dashboard_page])
 
-dashboard = CustomDashboard(pages=[plot_page])
 
-
-# pure dash callbacks
 @callback(
+    [Output("dashboard-api-store", "data"), Output("dashboard-offcanvas-id_notification", "children")],
     [
-        Output("plot-code-markdown", "children", allow_duplicate=True),
-        Output("graph-id", "figure", allow_duplicate=True),
-        Output("text-area-id", "value"),
-        Output("upload-message-id", "children"),
+        Input("dashboard-offcanvas-id_api_key", "value"),
+        Input("dashboard-offcanvas-id_api_base", "value"),
+        Input("dashboard-offcanvas-id_save-secrets-id", "n_clicks"),
     ],
-    [Input("on_page_load_action_trigger_vizro_ai_plot_page", "data")],
-    [State("outputs-store-id", "data")],
-    prevent_initial_call="initial_duplicate",
 )
-def update_data(page_data, outputs_data):
-    """Callback for retrieving latest vizro-ai output from dcc store."""
-    if not outputs_data:
+def save_dashboard_secrets(api_key, api_base, n_clicks):
+    if not n_clicks:
         raise PreventUpdate
 
-    ai_response = outputs_data["ai_response"]
-    fig = json.loads(outputs_data["figure"])
-    filename = f"File uploaded: '{outputs_data['filename']}'"
-    prompt = outputs_data["prompt"]
-
-    return ai_response, fig, prompt, filename
+    if api_key and api_base:
+        return {"api_key": api_key, "api_base": api_base}, "Secrets saved!"
 
 
 @callback(
-    Output("settings", "is_open"),
-    Input("open-settings-id", "n_clicks"),
-    [State("settings", "is_open")],
+    [Output("dashboard-offcanvas-id_api_key", "type"), Output("dashboard-offcanvas-id_api_base", "type")],
+    Input("dashboard-offcanvas-id_toggle-secrets-id", "value"),
 )
-def open_settings(n_clicks, is_open):
-    """Callback for opening and closing offcanvas settings component."""
+def show_secrets(value):
+    return ("text", "text") if value else ("password", "password")
+
+
+@callback(
+    Output("dashboard-offcanvas-id", "is_open"),
+    Input("dashboard-open_canvas", "n_clicks"),
+    [State("dashboard-offcanvas-id", "is_open")],
+)
+def toggle_offcanvas(n_clicks, is_open):
     return not is_open if n_clicks else is_open
 
 
 @callback(
-    Output("settings-api-key", "type"),
-    Input("settings-api-key-toggle", "value"),
+    [
+        Output("dashboard_code-markdown", "children", allow_duplicate=True),
+        Output("dashboard-text-area", "value"),
+        Output("dashboard-upload-message-id", "children"),
+    ],
+    [Input("on_page_load_action_trigger_vizro_ai_plot_dashboard", "data")],
+    [State("dashboard-outputs-store", "data")],
+    prevent_initial_call="initial_duplicate",
 )
-def show_api_key(value):
-    """Callback to show api key."""
-    return "text" if value else "password"
+def update_data(page_data, outputs_data):
+    if not outputs_data:
+        raise PreventUpdate
 
+    ai_response = outputs_data["ai_response"]
+    filename = f"Uploaded file name: '{outputs_data['filename']}'"
+    prompt = outputs_data["prompt"]
 
-@callback(
-    Output("settings-api-base", "type"),
-    Input("settings-api-base-toggle", "value"),
-)
-def show_api_base(value):
-    """Callback to show api base."""
-    return "text" if value else "password"
+    return ai_response, prompt, filename
 
 
 app = Vizro().build(dashboard)

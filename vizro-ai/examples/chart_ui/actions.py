@@ -16,22 +16,26 @@ from vizro_ai import VizroAI
 SUPPORTED_VENDORS = {"OpenAI": ChatOpenAI}
 
 
-def get_vizro_ai_dashboard(user_prompt, dfs, model, api_key, api_base):
-    llm = ChatOpenAI(model_name=model, openai_api_key=api_key, openai_api_base=api_base)
+def get_vizro_ai_plot(user_prompt, df, model, api_key, api_base, vendor_input):  # noqa: PLR0913
+    """VizroAi plot configuration."""
+    vendor = SUPPORTED_VENDORS[vendor_input]
+    llm = vendor(model_name=model, openai_api_key=api_key, openai_api_base=api_base)
     vizro_ai = VizroAI(model=llm)
-    ai_outputs = vizro_ai.dashboard([dfs], user_prompt, return_elements=True)
+    ai_outputs = vizro_ai.plot(df, user_prompt, explain=False, return_elements=True)
 
     return ai_outputs
 
 
 @capture("action")
-def run_vizro_ai_dashboard(user_prompt, n_clicks, data, model, api_data):
-    """Gets the AI response and adds it to the chatbot window."""
+def run_vizro_ai(user_prompt, n_clicks, data, model, api_key, api_base, vendor_input):  # noqa: PLR0913
+    """Gets the AI response and adds it to the text window."""
 
-    def create_response(ai_response, user_prompt, filename):
+    def create_response(ai_response, figure, user_prompt, filename):
+        plotly_fig = figure.to_json()
         return (
             ai_response,
-            {"ai_response": ai_response, "prompt": user_prompt, "filename": filename},
+            figure,
+            {"ai_response": ai_response, "figure": plotly_fig, "prompt": user_prompt, "filename": filename},
         )
 
     if not n_clicks:
@@ -39,28 +43,46 @@ def run_vizro_ai_dashboard(user_prompt, n_clicks, data, model, api_data):
 
     if not data:
         ai_response = "Please upload data to proceed!"
-        return create_response(ai_response, user_prompt, None)
+        figure = go.Figure()
+        return create_response(ai_response, figure, user_prompt, None)
 
-    if not api_data:
+    if not api_key:
         ai_response = "API key not found. Make sure you enter your API key!"
-        return create_response(ai_response, user_prompt, data["filename"])
+        figure = go.Figure()
+        return create_response(ai_response, figure, user_prompt, data["filename"])
+
+    if api_key.startswith('"'):
+        ai_response = "Make sure you enter your API key without quotes!"
+        figure = go.Figure()
+        return create_response(ai_response, figure, user_prompt, data["filename"])
+
+    if api_base is not None and api_base.startswith('"'):
+        ai_response = "Make sure you enter your API base without quotes!"
+        figure = go.Figure()
+        return create_response(ai_response, figure, user_prompt, data["filename"])
 
     try:
         df = pd.DataFrame(data["data"])
-        ai_outputs = get_vizro_ai_dashboard(
-            user_prompt=user_prompt, dfs=df, model=model, api_key=api_data["api_key"], api_base=api_data["api_base"]
+        ai_outputs = get_vizro_ai_plot(
+            user_prompt=user_prompt,
+            df=df,
+            model=model,
+            api_key=api_key,
+            api_base=api_base,
+            vendor_input=vendor_input,
         )
         ai_code = ai_outputs.code
+        figure = ai_outputs.figure
         formatted_code = black.format_str(ai_code, mode=black.Mode(line_length=100))
 
         ai_response = "\n".join(["```python", formatted_code, "```"])
-
-        return create_response(ai_response, user_prompt, data["filename"])
+        return create_response(ai_response, figure, user_prompt, data["filename"])
 
     except Exception as exc:
         logging.exception(exc)
         ai_response = f"Sorry, I can't do that. Following Error occurred: {exc}"
-        return create_response(ai_response, user_prompt, data["filename"])
+        figure = go.Figure()
+        return create_response(ai_response, figure, user_prompt, data["filename"])
 
 
 @capture("action")
