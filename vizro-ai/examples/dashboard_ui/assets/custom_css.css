@@ -26,7 +26,7 @@
   background-color: inherit;
   border: 1px solid var(--border-subtle-alpha-01);
   color: var(--text-primary);
-  height: 400px;
+  height: 500px;
   padding: 8px;
   width: 100%;
 }
@@ -81,6 +81,7 @@
 #trigger-button-id {
   width: 100%;
 }
+
 #dashboard-trigger-button {
   width: 100%;
 }
@@ -106,6 +107,7 @@
   padding-left: 0;
   padding-top: 8px;
 }
+
 .card:has(#dashboard-upload-message-id) {
   background-color: inherit;
   box-shadow: none;
@@ -131,7 +133,6 @@
   padding-right: 2px;
   width: 100%;
 }
-
 
 #dashboard-data-upload {
   border: 1px dashed var(--border-subtle-alpha-01);

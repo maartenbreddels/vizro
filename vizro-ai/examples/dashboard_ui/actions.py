@@ -9,7 +9,6 @@ import pandas as pd
 from _utils import check_file_extension
 from dash.exceptions import PreventUpdate
 from langchain_openai import ChatOpenAI
-from plotly import graph_objects as go
 from vizro.models.types import capture
 from vizro_ai import VizroAI
 
@@ -19,7 +18,7 @@ SUPPORTED_VENDORS = {"OpenAI": ChatOpenAI}
 def get_vizro_ai_dashboard(user_prompt, dfs, model, api_key, api_base):
     llm = ChatOpenAI(model_name=model, openai_api_key=api_key, openai_api_base=api_base)
     vizro_ai = VizroAI(model=llm)
-    ai_outputs = vizro_ai.dashboard([dfs], user_prompt, return_elements=True)
+    ai_outputs = vizro_ai._dashboard([dfs], user_prompt, return_elements=True)
 
     return ai_outputs
 

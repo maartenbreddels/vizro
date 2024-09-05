@@ -27,6 +27,7 @@ class UserPromptTextArea(vm.VizroBaseModel):
 
     type: Literal["user_text_area"] = "user_text_area"
     actions: List[Action] = []  # noqa: RUF012
+    placeholder: str
 
     _set_actions = _action_validator_factory("value")
 
@@ -37,8 +38,7 @@ class UserPromptTextArea(vm.VizroBaseModel):
             children=[
                 dcc.Textarea(
                     id=self.id,
-                    placeholder="Describe the chart you want to create, e.g. "
-                    "'Visualize the life expectancy per continent.'",
+                    placeholder=self.placeholder,
                 )
             ]
         )
@@ -211,6 +211,6 @@ class CustomDashboard(vm.Dashboard):
     def build(self):
         """Returns custom dashboard."""
         dashboard_build_obj = super().build()
-        dashboard_build_obj.children.append(dcc.Store(id="data-store-id", storage_type="session"))
-        dashboard_build_obj.children.append(dcc.Store(id="outputs-store-id", storage_type="session"))
+        dashboard_build_obj.children.append(dcc.Store(id="dashboard-data-store", storage_type="session"))
+        # dashboard_build_obj.children.append(dcc.Store(id="outputs-store-id", storage_type="session"))
         return dashboard_build_obj

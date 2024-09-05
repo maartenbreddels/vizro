@@ -1,20 +1,18 @@
-import dash_bootstrap_components as dbc
-
 import subprocess
-from actions import data_upload_action, display_filename
+
+import dash_bootstrap_components as dbc
 import vizro.models as vm
+from actions import data_upload_action, display_filename
 from components import (
     CodeClipboard,
+    CustomDashboard,
+    Icon,
     MyDropdown,
     MyPage,
     OffCanvas,
     UserPromptTextArea,
     UserUpload,
-    CustomDashboard,
-    Icon
 )
-
-from dash.exceptions import PreventUpdate
 from dash import Input, Output, State, callback, get_asset_url, html
 from dash.exceptions import PreventUpdate
 from vizro import Vizro
@@ -43,29 +41,16 @@ dashboard_page = MyPage(
     id="vizro_ai_dashboard_page",
     title="Vizro AI - Dashboard",
     layout=vm.Layout(
-        # grid=[
-        #     *[[0, 0, 0, 0]] * 6,
-        #     [1, 1, 1, 1],
-        #     [2, 2, 2, 2],
-        #     [3, 3, 3, 3],
-        # ]
-        grid=[
-            [2, 2, 0, 0, 0],
-            [1, 1, 0, 0, 0],
-            [1, 1, 0, 0, 0],
-            [3, 3, 0, 0, 0]
-
-        ]
+        grid=[[2, 2, 0, 0, 0], [1, 1, 0, 0, 0], [1, 1, 0, 0, 0], [1, 1, 0, 0, 0], [1, 1, 0, 0, 0], [3, 3, 0, 0, 0]]
     ),
     components=[
         vm.Container(title="", components=[CodeClipboard(id="dashboard")]),
-        UserPromptTextArea(
-            id="dashboard-text-area",
-        ),
+        UserPromptTextArea(id="dashboard-text-area", placeholder="Describe the dashboard you want to create."),
         vm.Container(
             title="",
             layout=vm.Layout(grid=[[0], [1]], row_gap="0px"),
             components=[
+                vm.Card(id="dashboard-upload-message-id", text="Upload your data files (csv or excel)"),
                 UserUpload(
                     id="dashboard-data-upload",
                     actions=[
@@ -81,20 +66,19 @@ dashboard_page = MyPage(
                         ),
                     ],
                 ),
-                vm.Card(id="dashboard-upload-message-id", text="Upload your data files (csv or excel)"),
             ],
         ),
         vm.Container(
             title="",
-            layout=vm.Layout(grid=[[0, 0, 1, 1, -1, -1, -1, 2, 3]], row_gap="0px", col_gap="4px"),
+            layout=vm.Layout(grid=[[2, 3, -1, -1, -1, -1, 1, 1, 0, 0]], row_gap="0px", col_gap="4px"),
             components=[
                 vm.Button(
                     id="dashboard-trigger-button",
                     text="Run VizroAI",
                 ),
                 MyDropdown(options=SUPPORTED_MODELS, value="gpt-3.5-turbo", multi=False, id="dashboard-model-dropdown"),
-                vm.Button(id="dashboard-open_settings", text="Settings"),
-                OffCanvas(id="dashboard-settings", options=["ChatOpenAI"], value="ChatOpenAI"),
+                Icon(id="open-settings-id"),
+                OffCanvas(id="dashboard-settings", options=["OpenAI"], value="OpenAI"),
             ],
         ),
     ],
@@ -104,83 +88,70 @@ dashboard = CustomDashboard(pages=[dashboard_page])
 
 
 @callback(
-    [Output("dashboard-api-store", "data"), Output("dashboard-offcanvas-id_notification", "children")],
-    [
-        Input("dashboard-offcanvas-id_api_key", "value"),
-        Input("dashboard-offcanvas-id_api_base", "value"),
-        Input("dashboard-offcanvas-id_save-secrets-id", "n_clicks"),
-    ],
+    Output("dashboard-settings-api-key", "type"),
+    Input("dashboard-settings-api-key-toggle", "value"),
 )
-def save_dashboard_secrets(api_key, api_base, n_clicks):
-    if not n_clicks:
-        raise PreventUpdate
-
-    if api_key and api_base:
-        return {"api_key": api_key, "api_base": api_base}, "Secrets saved!"
+def show_api_key(value):
+    """Callback to show api key."""
+    return "text" if value else "password"
 
 
 @callback(
-    [Output("dashboard-offcanvas-id_api_key", "type"), Output("dashboard-offcanvas-id_api_base", "type")],
-    Input("dashboard-offcanvas-id_toggle-secrets-id", "value"),
+    Output("dashboard-settings-api-base", "type"),
+    Input("dashboard-settings-api-base-toggle", "value"),
 )
-def show_secrets(value):
-    return ("text", "text") if value else ("password", "password")
+def show_api_base(value):
+    """Callback to show api base."""
+    return "text" if value else "password"
 
 
 @callback(
-    Output("dashboard-offcanvas-id", "is_open"),
-    Input("dashboard-open_canvas", "n_clicks"),
-    [State("dashboard-offcanvas-id", "is_open")],
+    Output("dashboard-settings", "is_open"),
+    Input("open-settings-id", "n_clicks"),
+    [State("dashboard-settings", "is_open")],
 )
-def toggle_offcanvas(n_clicks, is_open):
+def open_settings(n_clicks, is_open):
     return not is_open if n_clicks else is_open
 
 
 @callback(
+    Output("dashboard-code-markdown", "children"),
     [
-        Output("dashboard_code-markdown", "children", allow_duplicate=True),
-        Output("dashboard-text-area", "value"),
-        Output("dashboard-upload-message-id", "children"),
+        Input("dashboard-text-area", "value"),
+        Input("dashboard-data-store", "data"),
+        Input("dashboard-model-dropdown", "value"),
+        Input("dashboard-settings-api-key", "value"),
+        Input("dashboard-settings-api-base", "value"),
+        Input("dashboard-trigger-button", "n_clicks"),
     ],
-    [Input("on_page_load_action_trigger_vizro_ai_plot_dashboard", "data")],
-    [State("dashboard-outputs-store", "data")],
-    prevent_initial_call="initial_duplicate",
 )
-def update_data(page_data, outputs_data):
-    if not outputs_data:
-        raise PreventUpdate
-
-    ai_response = outputs_data["ai_response"]
-    filename = f"Uploaded file name: '{outputs_data['filename']}'"
-    prompt = outputs_data["prompt"]
-
-    return ai_response, prompt, filename
-
-
-@callback(
-    [
-        Output('dashboard-code-markdown', 'children'),
-        # Output('dashboard-outputs-store', 'data'),
-     ],
-    [
-        Input('dashboard-trigger-button', 'n_clicks'),
-        Input('dashboard-text-area', 'value'),
-        Input('dashboard-data-store-id', 'data'),
-        Input('dashboard-model-dropdown', 'value'),
-        Input('dashboard-api-store-id', 'data'),
-    ]
-)
-def run_script(n_clicks, user_prompt, data_store, model, api_store):
+def run_script(user_prompt, data, model, api_key, api_base, n_clicks):
     if n_clicks is None:
-        return "Click the button to run the script."
+        raise PreventUpdate
     else:
-        # Run the other Python script
-        result = subprocess.run([
-            'python', 'run_vizroai.py', '--arg1', 'user_prompt', '--arg2', 'data_store',  '--arg3', 'model', '--arg4', 'api_store', '--arg5', 'n_clicks'
-        ], capture_output=True, text=True)
+        # Run the Python script
+        result = subprocess.run(
+            [
+                "python",
+                "run_vizro_ai.py",
+                "--arg1",
+                "user_prompt",
+                "--arg2",
+                "data",
+                "--arg3",
+                "model",
+                "--arg4",
+                "api_key",
+                "--arg5",
+                "api_base",
+                "--arg6",
+                "n_clicks",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
         return f"Script output: {result.stdout}"
-
-
 
 
 app = Vizro().build(dashboard)
