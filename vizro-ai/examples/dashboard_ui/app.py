@@ -16,6 +16,7 @@ from components import (
 from dash import Input, Output, State, callback, get_asset_url, html
 from dash.exceptions import PreventUpdate
 from vizro import Vizro
+import black
 
 SUPPORTED_MODELS = [
     "gpt-4o-mini",
@@ -118,14 +119,14 @@ def open_settings(n_clicks, is_open):
     Output("dashboard-code-markdown", "children"),
     [
         Input("dashboard-text-area", "value"),
-        Input("dashboard-data-store", "data"),
+        # Input("dashboard-data-store", "data"),
         Input("dashboard-model-dropdown", "value"),
         Input("dashboard-settings-api-key", "value"),
         Input("dashboard-settings-api-base", "value"),
         Input("dashboard-trigger-button", "n_clicks"),
     ],
 )
-def run_script(user_prompt, data, model, api_key, api_base, n_clicks):
+def run_script(user_prompt, model, api_key, api_base, n_clicks):
     if n_clicks is None:
         raise PreventUpdate
     else:
@@ -135,23 +136,28 @@ def run_script(user_prompt, data, model, api_key, api_base, n_clicks):
                 "python",
                 "run_vizro_ai.py",
                 "--arg1",
-                "user_prompt",
+                f"{user_prompt}",
                 "--arg2",
-                "data",
+                f"{model}",
                 "--arg3",
-                "model",
+                f"{api_key}",
                 "--arg4",
-                "api_key",
+                f"{api_base}",
                 "--arg5",
-                "api_base",
-                "--arg6",
-                "n_clicks",
+                f"{n_clicks}"
+
             ],
             capture_output=True,
             text=True,
-            check=False,
         )
-        return f"Script output: {result.stdout}"
+        print(result.__dict__.keys())
+        print("err: ", result.stderr)
+        print("return code: ", result.returncode)
+        # ai_code = result.stdout
+        # formatted_code = black.format_str(ai_code, mode=black.Mode(line_length=100))
+        if result.returncode == 0:
+            return result.stderr
+        return result.stdout
 
 
 app = Vizro().build(dashboard)
