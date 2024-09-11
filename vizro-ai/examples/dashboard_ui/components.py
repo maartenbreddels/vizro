@@ -263,3 +263,19 @@ class CustomDashboard(vm.Dashboard):
         dashboard_build_obj.children.append(dcc.Store(id="dashboard-data-store", storage_type="session"))
         # dashboard_build_obj.children.append(dcc.Store(id="outputs-store-id", storage_type="session"))
         return dashboard_build_obj
+
+
+# Custom IframeComponent
+class IframeComponent(vm.VizroBaseModel):
+    """Custom component to embed an iframe in Vizro."""
+
+    type: Literal["iframe"] = "iframe"
+    src: str
+    width: str = "100%"
+    height: str = "600px"
+
+    def build(self):
+        return html.Iframe(
+            src=self.src,
+            style={"width": self.width, "height": self.height, "border": "none"}
+        )

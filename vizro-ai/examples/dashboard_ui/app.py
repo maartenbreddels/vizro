@@ -16,10 +16,12 @@ from components import (
     OffCanvas,
     UserPromptTextArea,
     UserUpload,
+    IframeComponent,
 )
 from dash import Input, Output, State, callback, get_asset_url, html
 from dash.exceptions import PreventUpdate
 from vizro import Vizro
+from typing import Literal
 
 SUPPORTED_MODELS = [
     "gpt-4o-mini",
@@ -42,15 +44,44 @@ MyPage.add_type("components", OffCanvas)
 MyPage.add_type("components", CodeClipboard)
 MyPage.add_type("components", Icon)
 vm.Container.add_type("components", Modal)
+vm.Container.add_type("components", IframeComponent)
 
 dashboard_page = MyPage(
     id="vizro_ai_dashboard_page",
     title="Vizro AI - Dashboard",
     layout=vm.Layout(
-        grid=[[2, 2, 0, 0, 0], [1, 1, 0, 0, 0], [1, 1, 0, 0, 0], [1, 1, 0, 0, 0], [1, 1, 0, 0, 0], [3, 3, 0, 0, 0]]
+        grid=[
+            [2, 2, 0, 0, 0], 
+            [1, 1, 0, 0, 0], 
+            [1, 1, 0, 0, 0], 
+            [1, 1, 0, 0, 0], 
+            [1, 1, 0, 0, 0], 
+            [3, 3, 0, 0, 0]
+            ]
     ),
     components=[
-        vm.Container(title="", components=[CodeClipboard(id="dashboard")], id="clipboard-container"),
+        # vm.Container(title="", components=[CodeClipboard(id="dashboard")], id="clipboard-container"),
+        vm.Tabs(
+            tabs=[
+                vm.Container(
+                    title="Code",
+                    components=[
+                        vm.Container(title="", components=[CodeClipboard(id="dashboard")], id="clipboard-container"),
+                    ],
+                ),
+                vm.Container(
+                    title="Dashboard",
+                    components=[
+                        IframeComponent(
+                            id="embedded_dashboard",
+                            # src="http://localhost:7868/",
+                            src="http://localhost:8070/",
+                            height="600px"
+                        )
+                    ],
+                ),
+            ],
+        ),
         UserPromptTextArea(id="dashboard-text-area", placeholder="Describe the dashboard you want to create."),
         vm.Container(
             title="",
@@ -159,8 +190,8 @@ def run_script(user_prompt, model, api_key, api_base, n_clicks, data, vendor):  
                 "--arg5",
                 f"{n_clicks}",
                 "--arg6",
-                data,
-                "--arg7",
+                # data,
+                # "--arg7",
                 f"{vendor}",
             ],
             capture_output=True,
