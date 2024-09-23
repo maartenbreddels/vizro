@@ -1,45 +1,61 @@
 """Dev app to try things out."""
 
-import vizro.models as vm
-import vizro.plotly.express as px
-from vizro import Vizro
-from vizro.models.types import capture
+import dash_bootstrap_components as dbc
+import pandas as pd
+from dash import Dash, html
+from vizro.figures.library import kpi_card, kpi_card_reference
 
-df = px.data.iris()
+df_kpi = pd.DataFrame({"Actual": [100, 200, 700], "Reference": [100, 300, 500], "Category": ["A", "B", "C"]})
 
+# Add single CSS file figures.css or
+base = "https://cdn.jsdelivr.net/gh/mckinsey/vizro/vizro-core/src/vizro/static/css/"
+vizro_bootstrap = base + "vizro-bootstrap.min.css"
 
-@capture("action")
-def my_custom_action(show_species: bool, points_data: dict):
-    """Custom action."""
-    clicked_point = points_data["points"][0]
-    x, y = clicked_point["x"], clicked_point["y"]
-    text = f"Clicked point has sepal length {x}, petal width {y}"
+# Add entire assets folder from Vizro
+app = Dash(external_stylesheets=[vizro_bootstrap])
 
-    if show_species:
-        species = clicked_point["customdata"][0]
-        text += f" and species {species}"
-    return text
-
-
-page = vm.Page(
-    title="Action with clickData as input",
-    components=[
-        vm.Graph(
-            id="scatter_chart",
-            figure=px.scatter(df, x="sepal_length", y="petal_width", color="species", custom_data=["species"]),
-            actions=[
-                vm.Action(
-                    function=my_custom_action(show_species=True),
-                    inputs=["scatter_chart.clickData"],
-                    outputs=["my_card.children"],
+app.layout = dbc.Container(
+    [
+        html.H1(children="Title of Dash App"),
+        html.Div(
+            children=[
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            kpi_card(
+                                data_frame=df_kpi,
+                                value_column="Actual",
+                                value_format="${value:.2f}",
+                                icon="shopping_cart",
+                                title="KPI Card I",
+                            )
+                        ),
+                        dbc.Col(
+                            kpi_card_reference(
+                                data_frame=df_kpi,
+                                value_column="Actual",
+                                reference_column="Reference",
+                                icon="payment",
+                                title="KPI Card II",
+                            )
+                        ),
+                        dbc.Col(
+                            kpi_card_reference(
+                                data_frame=df_kpi,
+                                value_column="Reference",
+                                reference_column="Actual",
+                                icon="payment",
+                                title="KPI Card III",
+                            )
+                        ),
+                    ]
                 ),
             ],
+            # TODO: Can we get rid of the requirement to add className="vizro_light"?
+            className="vizro_light",
         ),
-        vm.Card(id="my_card", text="Click on a point on the above graph."),
-    ],
+    ]
 )
 
-dashboard = vm.Dashboard(pages=[page])
-
 if __name__ == "__main__":
-    Vizro().build(dashboard).run()
+    app.run(debug=True, use_reloader=True)
